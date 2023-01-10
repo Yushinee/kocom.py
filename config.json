@@ -1,8 +1,8 @@
 {
-  "name": "Kocom Wallpad with RS485",
+  "name": "Kocom Boilder with RS485",
   "version": "2022.07.17",
   "slug": "kocom_py",
-  "description": "Kocom Wallpad for Home Assistant",
+  "description": "Kocom Boilder for Home Assistant",
   "arch": [
     "armhf",
     "armv7",
