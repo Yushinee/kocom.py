@@ -23,7 +23,7 @@ import configparser
 
 
 # define -------------------------------
-SW_VERSION = '2022.04.10'
+SW_VERSION = '2023.01.10'
 CONFIG_FILE = 'kocom.conf'
 BUF_SIZE = 100
 
@@ -331,17 +331,24 @@ def send_wait_response(dest, src=device_h_dic['wallpad']+'00', cmd=cmd_h_dic['st
     #logging.debug('waiting for send_wait_response :'+dest)
     wait_target.put(dest)
     #logging.debug('entered send_wait_response :'+dest)
-    ret = { 'value':'0'*16, 'flag':False }
+    #change to make it working for case without wallpad
+    ret = { 'value':'0'*16, 'flag':None }
 
     if send(dest, src, cmd, value, log, check_ack) != False:
         try:
+            #logging.debug("trying to get from q !!!")
             ret = wait_q.get(True, 2)
+            #logging.debug(f'it is executed {ret}')
             if publish == True:
+                #logging.debug("publish is starting !!!")
                 publish_status(ret)
+                #logging.debug("publish is finished !!!")
         except queue.Empty:
+            #logging.debug('queue is empty')
             pass
     wait_target.get()
     #logging.debug('exiting send_wait_response :'+dest)
+    #logging.debug(ret)
     return ret
 
 
@@ -557,6 +564,7 @@ def discovery():
         if len(dev) > 1:
             sub = dev[1]
         publish_discovery(dev[0], sub)
+        #logging.debug(f"enabled device is {dev[0]} sequence {dev[1]}")
     publish_discovery('query')
 
 #https://www.home-assistant.io/docs/mqtt/discovery/
@@ -727,6 +735,9 @@ def poll_state(enforce=False):
     dev_list = [x.strip() for x in config.get('Device','enabled').split(',')]
     no_polling_list = ['wallpad', 'elevator']
 
+    logging.debug("configured devices are:")
+    logging.debug(dev_list)
+    
     #thread health check
     for thread_instance in thread_list:
         if thread_instance.is_alive() == False:
@@ -735,6 +746,7 @@ def poll_state(enforce=False):
 
     for t in dev_list:
         dev = t.split('_')
+        #logging.debug(f"enabled device is {dev[0]} sequence {dev[1]}")
         if dev[0] in no_polling_list:
             continue
 
@@ -744,8 +756,10 @@ def poll_state(enforce=False):
         else:
             sub_id = '00'
 
+        #logging.debug(f"device id is {dev_id} sub_id is {sub_id}")
         if dev_id != None and sub_id != None:
             if query(dev_id + sub_id, publish=True, enforce=enforce)['flag'] == False:
+                #logging.debug("breaking!!!")
                 break
             time.sleep(1)
 
@@ -814,7 +828,7 @@ def listen_hexdata():
             logging.info("[recv] " + d)
 
         p_ret = parse(d)
-
+        #logging.debug(p_ret)
         # store recent packets in cache
         cache_data.insert(0, p_ret)
         if len(cache_data) > BUF_SIZE:
@@ -881,3 +895,4 @@ if __name__ == "__main__":
     poll_timer.start()
 
     discovery()
+
