@@ -285,6 +285,7 @@ def parse(hex_data):
 
 def thermo_parse(value):
     ret = { 'heat_mode': 'heat' if value[:2] == '11' else 'off',
+            'hvac_action': 'heating' if value[:2] == '11' and int(value[4:6], 16) >= int(value[8:10], 16) else 'idle',
             'away': 'true' if value[2:4] == '01' else 'false',
             'set_temp': int(value[4:6], 16) if value[:2] == '11' else int(config.get('User', 'init_temp')),
             'cur_temp': int(value[8:10], 16)}
@@ -331,7 +332,6 @@ def send_wait_response(dest, src=device_h_dic['wallpad']+'00', cmd=cmd_h_dic['st
     #logging.debug('waiting for send_wait_response :'+dest)
     wait_target.put(dest)
     #logging.debug('entered send_wait_response :'+dest)
-    #change to make it working for case without wallpad
     ret = { 'value':'0'*16, 'flag':None }
 
     if send(dest, src, cmd, value, log, check_ack) != False:
@@ -685,9 +685,13 @@ def publish_discovery(dev, sub=''):
             'temp_stat_t': 'kocom/room/thermo/{}/state'.format(num),
             'temp_stat_tpl': '{{ value_json.set_temp }}',
 
+            'hvac_action_state_topic': 'kocom/room/thermo/{}/state'.format(num),
+            'hvac_action_state_template': '{{ value_json.hvac_action }}',
+
             'curr_temp_t': 'kocom/room/thermo/{}/state'.format(num),
             'curr_temp_tpl': '{{ value_json.cur_temp }}',
             'modes': ['off', 'heat'],
+
             'min_temp': 20,
             'max_temp': 30,
             'ret': 'false',
@@ -895,4 +899,3 @@ if __name__ == "__main__":
     poll_timer.start()
 
     discovery()
-
